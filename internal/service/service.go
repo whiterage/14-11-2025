@@ -3,15 +3,18 @@ package service
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
-
-	"github.com/google/uuid"
 
 	"github.com/whiterage/webserver_go/internal/repository"
 	"github.com/whiterage/webserver_go/pkg/models"
+	"github.com/whiterage/webserver_go/pkg/pdf"
 )
 
-var ErrTaskNotFound = errors.New("task not found")
+var (
+	ErrTaskNotFound = errors.New("task not found")
+	ErrEmptyLinks   = errors.New("empty links payload")
+)
 
 type Checker interface {
 	Check(ctx context.Context, url string) models.LinkStatus
@@ -21,6 +24,8 @@ type Service struct {
 	repo    *repository.MemoryRepo
 	queue   chan *models.Task
 	checker Checker
+	mu      sync.Mutex
+	nextID  int
 }
 
 func NewService(repo *repository.MemoryRepo, checker Checker, queueSize int) *Service {
@@ -32,25 +37,26 @@ func NewService(repo *repository.MemoryRepo, checker Checker, queueSize int) *Se
 		repo:    repo,
 		queue:   make(chan *models.Task, queueSize),
 		checker: checker,
+		nextID:  1,
 	}
 }
 
-func (s *Service) CreateTask(ctx context.Context, links []string) (string, error) {
+func (s *Service) CreateTask(ctx context.Context, links []string) (int, error) {
 	if len(links) == 0 {
-		return "", errors.New("empty links payload")
+		return 0, ErrEmptyLinks
 	}
 
 	task := &models.Task{
-		ID:        uuid.NewString(),
+		ID:        s.nextTaskID(),
 		CreatedAt: time.Now().UTC(),
-		Status:    "pending",
+		Status:    models.StatusPending,
 		Results:   make([]models.LinkStatus, len(links)),
 	}
 
 	for i, url := range links {
 		task.Results[i] = models.LinkStatus{
 			URL:    url,
-			Status: "pending",
+			Status: models.StatusPending,
 		}
 	}
 
@@ -59,16 +65,42 @@ func (s *Service) CreateTask(ctx context.Context, links []string) (string, error
 	select {
 	case s.queue <- task:
 	case <-ctx.Done():
-		return "", ctx.Err()
+		return 0, ctx.Err()
 	}
 
 	return task.ID, nil
 }
 
-func (s *Service) GetTask(id string) (*models.Task, error) {
+func (s *Service) GetTask(id int) (*models.Task, error) {
 	task, ok := s.repo.Get(id)
 	if !ok {
 		return nil, ErrTaskNotFound
 	}
 	return task, nil
+}
+
+func (s *Service) GenerateReport(ctx context.Context, ids []int) ([]byte, error) {
+	if len(ids) == 0 {
+		return nil, errors.New("empty links_list payload")
+	}
+
+	tasks := s.repo.List(ids)
+	if len(tasks) == 0 || len(tasks) != len(ids) {
+		return nil, ErrTaskNotFound
+	}
+
+	data, err := pdf.BuildReport(tasks)
+	if err != nil {
+		return nil, err
+	}
+	//ctx добавлю чуть позже для отмены операции
+	return data, nil
+}
+
+func (s *Service) nextTaskID() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	id := s.nextID
+	s.nextID++
+	return id
 }

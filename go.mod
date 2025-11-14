@@ -2,4 +2,4 @@ module github.com/whiterage/webserver_go
 
 go 1.25.1
 
-require github.com/google/uuid v1.6.0 // indirect
+require github.com/jung-kurt/gofpdf v1.16.2

@@ -19,18 +19,18 @@ func NewHTTPChecker(timeout time.Duration) *HTTPChecker {
 func (c *HTTPChecker) Check(ctx context.Context, url string) models.LinkStatus {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return models.LinkStatus{URL: url, Status: "error"}
+		return models.LinkStatus{URL: url, Status: models.StatusNotAvailable}
 	}
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return models.LinkStatus{URL: url, Status: "unavailable"}
+		return models.LinkStatus{URL: url, Status: models.StatusNotAvailable}
 	}
 	resp.Body.Close()
 
-	status := "available"
-	if resp.StatusCode >= 400 {
-		status = "unavailable"
+	status := models.StatusAvailable
+	if resp.StatusCode >= http.StatusBadRequest {
+		status = models.StatusNotAvailable
 	}
 
 	return models.LinkStatus{

@@ -2,7 +2,11 @@ package service
 
 import (
 	"context"
+	"errors"
+	"net/url"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/whiterage/webserver_go/pkg/models"
 )
@@ -51,7 +55,7 @@ func (wp *WorkerPool) workerLoop(ctx context.Context) {
 }
 
 func (wp *WorkerPool) processTask(ctx context.Context, task *models.Task) {
-	task.Status = "processing"
+	task.Status = models.StatusProcessing
 	wp.service.repo.Save(task)
 
 	for i := range task.Results {
@@ -61,15 +65,42 @@ func (wp *WorkerPool) processTask(ctx context.Context, task *models.Task) {
 		default:
 		}
 
-		result := wp.service.checker.Check(ctx, task.Results[i].URL)
-		task.Results[i] = result
+		resolvedURL, err := normalizeURL(task.Results[i].URL)
+		if err != nil {
+			task.Results[i].Status = models.StatusNotAvailable
+			task.Results[i].CheckTime = time.Now().UTC()
+			continue
+		}
+
+		result := wp.service.checker.Check(ctx, resolvedURL)
+		task.Results[i].Status = result.Status
+		task.Results[i].CheckTime = result.CheckTime
 	}
 
-	task.Status = "done"
+	task.Status = models.StatusDone
 	wp.service.repo.Save(task)
 }
 
 func (wp *WorkerPool) Stop() {
 	close(wp.stop)
 	wp.wg.Wait()
+}
+
+func normalizeURL(raw string) (string, error) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return "", errors.New("empty url")
+	}
+	if !strings.HasPrefix(value, "http://") && !strings.HasPrefix(value, "https://") {
+		value = "https://" + value
+	}
+
+	parsed, err := url.Parse(value)
+	if err != nil {
+		return "", err
+	}
+	if parsed.Host == "" {
+		return "", errors.New("invalid url")
+	}
+	return parsed.String(), nil
 }

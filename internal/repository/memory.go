@@ -7,13 +7,13 @@ import (
 )
 
 type MemoryRepo struct {
-	tasks map[string]*models.Task
+	tasks map[int]*models.Task
 	mu    sync.RWMutex
 }
 
 func NewMemoryRepo() *MemoryRepo {
 	return &MemoryRepo{
-		tasks: make(map[string]*models.Task),
+		tasks: make(map[int]*models.Task),
 	}
 }
 
@@ -23,14 +23,14 @@ func (r *MemoryRepo) Save(task *models.Task) {
 	r.tasks[task.ID] = task
 }
 
-func (r *MemoryRepo) Get(id string) (*models.Task, bool) {
+func (r *MemoryRepo) Get(id int) (*models.Task, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	task, ok := r.tasks[id]
 	return task, ok
 }
 
-func (r *MemoryRepo) List(ids []string) []*models.Task {
+func (r *MemoryRepo) List(ids []int) []*models.Task {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	tasks := make([]*models.Task, 0, len(ids))
