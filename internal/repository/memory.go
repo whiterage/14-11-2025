@@ -130,7 +130,6 @@ func (r *MemoryRepo) persistLocked() {
 		Tasks: make([]*models.Task, 0, len(r.tasks)),
 	}
 	for _, task := range r.tasks {
-		// copy pointer reference is OK because tasks stored in memory already
 		state.Tasks = append(state.Tasks, task)
 	}
 

@@ -117,7 +117,6 @@ func (s *Service) GenerateReport(ctx context.Context, ids []int) ([]byte, error)
 	if err != nil {
 		return nil, err
 	}
-	//ctx добавлю чуть позже для отмены операции
 	return data, nil
 }
 

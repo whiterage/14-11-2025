@@ -67,7 +67,6 @@ func main() {
 		log.Printf("shutdown error: %v", err)
 	}
 
-	// prevent new tasks and let workers drain current queue
 	svc.CloseQueue()
 
 	done := make(chan struct{})
