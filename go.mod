@@ -1,4 +1,4 @@
-module github.com/whiterage/webserver_go
+module github.com/whiterage/14-11-2025
 
 go 1.25.1
 

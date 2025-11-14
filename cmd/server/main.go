@@ -9,10 +9,10 @@ import (
 	"syscall"
 	"time"
 
-	api "github.com/whiterage/webserver_go/internal/http"
-	"github.com/whiterage/webserver_go/internal/repository"
-	"github.com/whiterage/webserver_go/internal/service"
-	"github.com/whiterage/webserver_go/internal/worker"
+	api "github.com/whiterage/14-11-2025/internal/http"
+	"github.com/whiterage/14-11-2025/internal/repository"
+	"github.com/whiterage/14-11-2025/internal/service"
+	"github.com/whiterage/14-11-2025/internal/worker"
 )
 
 func main() {

@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/whiterage/webserver_go/internal/repository"
-	"github.com/whiterage/webserver_go/pkg/models"
-	"github.com/whiterage/webserver_go/pkg/pdf"
+	"github.com/whiterage/14-11-2025/internal/repository"
+	"github.com/whiterage/14-11-2025/pkg/models"
+	"github.com/whiterage/14-11-2025/pkg/pdf"
 )
 
 var (
